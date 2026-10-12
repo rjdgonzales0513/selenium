@@ -3,12 +3,8 @@ package com.selenium.pages;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-import com.common.utils.LoggerUtils;
-import com.selenium.utils.WaitUtils;
-
 /** Checkout step one: customer name and postal code. */
-public class CheckoutInformationPage {
-    private final WebDriver driver;
+public class CheckoutInformationPage extends BasePage {
     private final By firstName = By.cssSelector("input[data-test='firstName']");
     private final By lastName = By.cssSelector("input[data-test='lastName']");
     private final By postalCode = By.cssSelector("input[data-test='postalCode']");
@@ -17,29 +13,28 @@ public class CheckoutInformationPage {
     private final By errorMessage = By.cssSelector("h3[data-test='error']");
 
     public CheckoutInformationPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
+    /** Fills the form and clicks Continue. Empty values leave the field blank (for validation tests). */
     public void enterInformation(String first, String last, String zip) {
-        type(firstName, first);
-        type(lastName, last);
-        type(postalCode, zip);
-        LoggerUtils.info(String.format("Entered checkout information: '%s' '%s' '%s'", first, last, zip));
-        driver.findElement(continueBtn).click();
+        typeIfPresent(firstName, first, "First name field");
+        typeIfPresent(lastName, last, "Last name field");
+        typeIfPresent(postalCode, zip, "Postal code field");
+        actions.click(continueBtn, "Continue button");
     }
 
     public void cancel() {
-        WaitUtils.clickable(driver, cancelBtn).click();
-        LoggerUtils.info("Cancelled checkout");
+        actions.click(cancelBtn, "Cancel button");
     }
 
     public String getErrorMessage() {
-        return WaitUtils.visible(driver, errorMessage).getText();
+        return actions.getText(errorMessage);
     }
 
-    private void type(By field, String value) {
+    private void typeIfPresent(By field, String value, String fieldName) {
         if (value != null && !value.isEmpty()) {
-            WaitUtils.visible(driver, field).sendKeys(value);
+            actions.type(field, value, fieldName);
         }
     }
 }

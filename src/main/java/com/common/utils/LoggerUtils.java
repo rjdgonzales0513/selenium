@@ -65,8 +65,9 @@ public final class LoggerUtils {
     }
 
     private static Logger log4j() {
-        Class<?> caller = WALKER.walk(frames -> frames
-                .map(StackWalker.StackFrame::getDeclaringClass)
+        // Explicit type witness: Eclipse's compiler (VS Code Java) otherwise infers Object here
+        Class<?> caller = WALKER.<Class<?>>walk(frames -> frames
+                .<Class<?>>map(StackWalker.StackFrame::getDeclaringClass)
                 .filter(c -> c != LoggerUtils.class)
                 .findFirst()
                 .orElse(LoggerUtils.class));

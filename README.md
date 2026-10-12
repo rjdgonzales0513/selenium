@@ -67,7 +67,7 @@ src/main/java/com/              Framework code (no step definitions)
 │   ├── listeners/    ScenarioReportListener (Cucumber plugin that drives logging and the report)
 │   ├── report/       ExtentManager
 │   └── utils/        LoggerUtils, ExcelUtils
-├── selenium/    UI layer: driver factory, page objects, wait/action/screenshot utils
+├── selenium/    UI layer: driver factory, page objects (BasePage), WebActionUtils, wait/screenshot utils
 └── api/         API layer: request specs, logging filter, generic HTTP client, auth, scenario context
 src/test/java/com/              Test code
 ├── common/stepdefinitions/     Hooks (start browser for @Browser, failure screenshot, quit)
@@ -103,6 +103,21 @@ The test plan, test scenarios and detailed test cases (steps, data, expected res
 - UI features must be tagged `@Browser`. The browser is only started for `@Browser` scenarios.
 - Start each scenario name with an ID, such as `CART_TC_001 - ...`. In a Scenario Outline, put `<id>` in the name and add an `id` column to Examples, so each row gets a unique name in logs and reports.
 - UI steps are written as "the user …". API steps are written as "I …".
+- Page objects extend `BasePage` and perform every browser action through the inherited `actions` object (`WebActionUtils`), never through raw Selenium calls:
+
+  ```java
+  public class LoginPage extends BasePage {
+      private final By loginBtn = By.id("login-button");
+
+      public void login(String user, String pass) {
+          actions.type(username, user, "Username field");
+          actions.typeSecret(password, pass, "Password field");
+          actions.click(loginBtn, "Login button");
+      }
+  }
+  ```
+
+  `WebActionUtils` waits for each element and logs each action with the readable name you pass in. It covers `navigateTo`, `click`, `type`, `typeSecret`, `selectByVisibleText`, `getText`, `getVisibleTexts`, `getTexts` (no wait, may be empty), `isDisplayed` (returns false instead of throwing), and the frame and window helpers. If a page needs a new kind of interaction, add it to `WebActionUtils` so every page can reuse it.
 - UI step classes receive `PageManager` through their constructor (picocontainer creates one per scenario), and get pages from it, for example `pages.cart()`. Don't keep page objects in static fields.
 
 ```gherkin
@@ -177,7 +192,7 @@ What gets logged automatically:
 - **API calls:** method, URL, status code, response time, request headers and body, and response body. Response headers are logged at DEBUG level only.
 - **Screenshots:** one is captured and attached when a UI scenario fails. To add one yourself, call `ScreenshotUtils.attachToReport(driver, "title")`.
 
-Secrets are masked as `****`. This covers `Authorization`, `x-api-key` and cookie headers, and `password`, `token` and `secret` fields in JSON bodies. Login passwords are never logged. In UI code, use `ElementActionUtils.typeSecret(...)` for sensitive inputs.
+Secrets are masked as `****`. This covers `Authorization`, `x-api-key` and cookie headers, and `password`, `token` and `secret` fields in JSON bodies. Login passwords are never logged. In UI code, use `actions.typeSecret(...)` for sensitive inputs.
 
 ## Reports
 

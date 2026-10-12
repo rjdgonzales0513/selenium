@@ -1,19 +1,18 @@
 package com.selenium.stepdefinitions;
 
-import com.common.utils.LoggerUtils;
 import com.selenium.driver.DriverManager;
-import com.selenium.utils.ElementActionUtils;
+import com.selenium.utils.WebActionUtils;
 
 import io.cucumber.java.en.When;
 
 /** Generic browser/window steps that aren't tied to a specific page. */
 public class WebSteps {
 
-    private ElementActionUtils actions;
+    private WebActionUtils actions;
 
-    private ElementActionUtils actions() {
+    private WebActionUtils actions() {
         if (actions == null) {
-            actions = new ElementActionUtils(DriverManager.getDriver());
+            actions = new WebActionUtils(DriverManager.getDriver());
         }
         return actions;
     }
@@ -22,8 +21,7 @@ public class WebSteps {
     public void openNewTab(String url) {
         actions().identifyParentWindow();
         actions().openNewTab();
-        DriverManager.getDriver().navigate().to(url);
-        LoggerUtils.info("Navigated new tab to " + url);
+        actions().navigateTo(url);
     }
 
     @When("the user closes the current tab")

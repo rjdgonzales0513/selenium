@@ -5,43 +5,36 @@ import java.util.List;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.Select;
 
-import com.common.utils.LoggerUtils;
-import com.selenium.utils.WaitUtils;
-
-public class InventoryPage {
-    private final WebDriver driver;
+public class InventoryPage extends BasePage {
     private final By productHeader = By.xpath("//span[text()='Products']");
     private final By sortDropdown = By.cssSelector("select[data-test='product-sort-container']");
     private final By itemPrices = By.cssSelector("div[data-test='inventory-item-price']");
 
     public InventoryPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public boolean isDisplayed() {
-        return WaitUtils.visible(driver, productHeader).isDisplayed();
+        return actions.isDisplayed(productHeader);
     }
 
     public void addToCart(String item) {
-        WaitUtils.clickable(driver, getAddToCartButton(item)).click();
-        LoggerUtils.info("Added '" + item + "' to cart");
+        actions.click(addToCartButton(item), "'Add to cart' for " + item);
     }
 
     /** Selects a sort option by its visible text, e.g. "Price (low to high)". */
     public void sortBy(String option) {
-        new Select(WaitUtils.visible(driver, sortDropdown)).selectByVisibleText(option);
-        LoggerUtils.info("Sorted products by '" + option + "'");
+        actions.selectByVisibleText(sortDropdown, option, "Sort dropdown");
     }
 
     public List<BigDecimal> getItemPrices() {
-        return WaitUtils.allVisible(driver, itemPrices).stream()
-                .map(e -> new BigDecimal(e.getText().replace("$", "").trim()))
+        return actions.getVisibleTexts(itemPrices).stream()
+                .map(text -> new BigDecimal(text.replace("$", "")))
                 .toList();
     }
 
-    private By getAddToCartButton(String itemName) {
+    private By addToCartButton(String itemName) {
         return By.xpath("//div[text()='" + itemName
                 + "']/ancestor::div[@class='inventory_item_label']/following-sibling::div//button");
     }

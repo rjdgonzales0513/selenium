@@ -5,14 +5,9 @@ import java.util.List;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-
-import com.common.utils.LoggerUtils;
-import com.selenium.utils.WaitUtils;
 
 /** Checkout step two: order summary with prices, tax and total. */
-public class CheckoutOverviewPage {
-    private final WebDriver driver;
+public class CheckoutOverviewPage extends BasePage {
     private final By itemNames = By.cssSelector("div[data-test='inventory-item-name']");
     private final By itemPrices = By.cssSelector("div[data-test='inventory-item-price']");
     private final By subtotal = By.cssSelector("div[data-test='subtotal-label']");
@@ -21,32 +16,31 @@ public class CheckoutOverviewPage {
     private final By finishBtn = By.cssSelector("button[data-test='finish']");
 
     public CheckoutOverviewPage(WebDriver driver) {
-        this.driver = driver;
+        super(driver);
     }
 
     public List<String> getItemNames() {
-        return WaitUtils.allVisible(driver, itemNames).stream().map(WebElement::getText).toList();
+        return actions.getVisibleTexts(itemNames);
     }
 
     public List<BigDecimal> getItemPrices() {
-        return WaitUtils.allVisible(driver, itemPrices).stream().map(e -> money(e.getText())).toList();
+        return actions.getVisibleTexts(itemPrices).stream().map(CheckoutOverviewPage::money).toList();
     }
 
     public BigDecimal getItemTotal() {
-        return money(WaitUtils.visible(driver, subtotal).getText());
+        return money(actions.getText(subtotal));
     }
 
     public BigDecimal getTax() {
-        return money(WaitUtils.visible(driver, tax).getText());
+        return money(actions.getText(tax));
     }
 
     public BigDecimal getTotal() {
-        return money(WaitUtils.visible(driver, total).getText());
+        return money(actions.getText(total));
     }
 
     public void finish() {
-        WaitUtils.clickable(driver, finishBtn).click();
-        LoggerUtils.info("Clicked finish");
+        actions.click(finishBtn, "Finish button");
     }
 
     /** "Item total: $39.98" -> 39.98 */
