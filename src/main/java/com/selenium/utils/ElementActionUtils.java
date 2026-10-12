@@ -6,12 +6,11 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WindowType;
 
-import com.aventstack.extentreports.ExtentTest;
+import com.common.utils.LoggerUtils;
 
 public class ElementActionUtils {
     private String parentWindow;
     private WebDriver driver;
-    private static ExtentTest logger = LoggerUtils.getLogger();
 
     public ElementActionUtils(WebDriver driver) {
         this.driver = driver;
@@ -19,42 +18,50 @@ public class ElementActionUtils {
 
     public void type(By element, String value, String elementName) {
         WaitUtils.visible(driver, element).sendKeys(value);
-        logger.info(elementName + " has inputted " + value);
+        LoggerUtils.info("Typed '" + value + "' into " + elementName);
+    }
+
+    /** Same as type() but never logs the value - use for passwords and other secrets. */
+    public void typeSecret(By element, String value, String elementName) {
+        WaitUtils.visible(driver, element).sendKeys(value);
+        LoggerUtils.info("Typed **** into " + elementName);
     }
 
     public void click(By element, String elementName) {
         WaitUtils.visible(driver, element).click();
-        logger.info(elementName + " has been clicked");
+        LoggerUtils.info("Clicked " + elementName);
     }
 
     public void switchFrame(By element, String elementName) {
 
         driver.switchTo().frame(WaitUtils.visible(driver, element));
-        logger.info(elementName + " has been switch to this frame.");
+        LoggerUtils.info("Switched to frame: " + elementName);
     }
 
     public void switchToDefaultFrame() {
         driver.switchTo().defaultContent();
-        logger.info("Frame has been switch to default frame.");
+        LoggerUtils.info("Switched to default content");
     }
 
     public void switchToParentFrame() {
         driver.switchTo().parentFrame();
-        logger.info("Frame has been switch to parent frame.");
+        LoggerUtils.info("Switched to parent frame");
     }
 
     public void switchFrameByIndex(int index) {
         driver.switchTo().frame(index);
-        logger.info(String.format("Frame has been switch to %d frame.", index));
+        LoggerUtils.info("Switched to frame at index " + index);
     }
 
-    public void indentifyParentWindow() {
+    public void identifyParentWindow() {
         parentWindow = driver.getWindowHandle();
+        LoggerUtils.debug("Parent window handle: " + parentWindow);
     }
 
     public void switchToParentWindow() {
 
         driver.switchTo().window(parentWindow);
+        LoggerUtils.info("Switched to parent window: " + driver.getTitle());
     }
 
     public void switchWindowByTitle(String expectedTitle) {
@@ -65,22 +72,26 @@ public class ElementActionUtils {
 
             // Check if the current window matches the desired title
             if (driver.getTitle().contains(expectedTitle)) {
-                logger.pass("Switched to window: " + driver.getTitle());
-                break;
+                LoggerUtils.pass("Switched to window: " + driver.getTitle());
+                return;
             }
         }
+        LoggerUtils.warn("No window found with title containing: " + expectedTitle);
     }
 
     public void openNewWindow() {
         driver.switchTo().newWindow(WindowType.WINDOW);
+        LoggerUtils.info("Opened new window");
     }
 
     public void openNewTab() {
         driver.switchTo().newWindow(WindowType.TAB);
+        LoggerUtils.info("Opened new tab");
     }
 
     public void closeCurrentWindow() {
         driver.close();
+        LoggerUtils.info("Closed current window");
     }
 
 }

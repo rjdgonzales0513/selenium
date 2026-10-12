@@ -20,7 +20,7 @@ public class ExcelUtils {
      */
     public static Map<String, String> getTestData(String sheetName, String testDataId) {
         String filePath = "src/test/resources/testdata/" + ConfigManager.getEnvironment() + "/TestData.xlsx";
-        System.out.println(filePath);
+        LoggerUtils.info("Reading test data '" + testDataId + "' from sheet '" + sheetName + "' in " + filePath);
         Map<String, String> testData = new LinkedHashMap<>();
 
         try (FileInputStream fis = new FileInputStream(filePath);

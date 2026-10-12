@@ -13,7 +13,7 @@ import org.junit.platform.suite.api.Suite;
 @IncludeEngines("cucumber")
 @SelectPackages("features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.selenium.stepdefinitions, com.common.stepdefinitions, com.api.stepdefinitions")
-@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, html:target/cucumber-report.html")
+@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, html:target/cucumber-report.html, com.common.listeners.ScenarioReportListener")
 @ConfigurationParameter(key = FILTER_TAGS_PROPERTY_NAME, value = "@All")
 public class TestRunner {
 

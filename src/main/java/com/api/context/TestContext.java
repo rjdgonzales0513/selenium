@@ -18,14 +18,17 @@ import java.util.Map;
 public class TestContext {
 
     private Response response;
-    private Object requestBody;
-    private String requestBodyJson;
+    private String requestBody;
 
     private final Map<String, Object> queryParams = new LinkedHashMap<>();
     private final Map<String, Object> pathParams = new LinkedHashMap<>();
     private final Map<String, Object> headers = new LinkedHashMap<>();
+    private final Map<String, String> storedValues = new LinkedHashMap<>();
 
     public Response getResponse() {
+        if (response == null) {
+            throw new IllegalStateException("No response yet - send a request before asserting on it");
+        }
         return response;
     }
 
@@ -33,20 +36,12 @@ public class TestContext {
         this.response = response;
     }
 
-    public Object getRequestBody() {
+    public String getRequestBody() {
         return requestBody;
     }
 
-    public void setRequestBody(Object requestBody) {
+    public void setRequestBody(String requestBody) {
         this.requestBody = requestBody;
-    }
-
-    public String getRequestBodyJson() {
-        return requestBodyJson;
-    }
-
-    public void setRequestBodyJson(String requestBodyJson) {
-        this.requestBodyJson = requestBodyJson;
     }
 
     public void addQueryParam(String key, Object value) {
@@ -71,5 +66,17 @@ public class TestContext {
 
     public Map<String, Object> getHeaders() {
         return headers;
+    }
+
+    public void storeValue(String key, String value) {
+        storedValues.put(key, value);
+    }
+
+    public String getStoredValue(String key) {
+        String value = storedValues.get(key);
+        if (value == null) {
+            throw new IllegalArgumentException("Nothing stored under '" + key + "'. Stored keys: " + storedValues.keySet());
+        }
+        return value;
     }
 }

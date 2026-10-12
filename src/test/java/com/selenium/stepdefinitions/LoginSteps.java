@@ -1,52 +1,65 @@
 package com.selenium.stepdefinitions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Map;
 
-import org.junit.jupiter.api.Assertions;
-
 import com.common.utils.ExcelUtils;
-import com.selenium.driver.DriverManager;
-import com.selenium.pages.InventoryPage;
-import com.selenium.pages.LoginPage;
+import com.common.utils.LoggerUtils;
+import com.selenium.context.PageManager;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 public class LoginSteps {
-    private LoginPage loginPage;
-    private InventoryPage homePage;
+
+    private final PageManager pages;
+
+    public LoginSteps(PageManager pages) {
+        this.pages = pages;
+    }
 
     @Given("the user is on the login page")
-    public void userIsOnLoginPage() {
-        loginPage = new LoginPage(DriverManager.getDriver()).open();
+    public void openLoginPage() {
+        pages.login().open();
     }
 
     @When("the user logs in with username {string} and password {string}")
-    public void userLogsIn(String username, String password) {
-        loginPage.login(username, password);
-        homePage = new InventoryPage(DriverManager.getDriver());
+    public void login(String username, String password) {
+        pages.login().login(username, password);
     }
 
-    @When("I login using test data {string}")
-        public void loginUsingTestData(String testDataId) {
-
-        Map<String, String> data =
-                ExcelUtils.getTestData("Login", testDataId);
-
-        String username = data.get("Username");
-        String password = data.get("Password");
-
-        System.out.println("Username: " + username);
-        System.out.println("Password: " + password);
-
-        loginPage.login(username, password);
-        homePage = new InventoryPage(DriverManager.getDriver());
+    @When("the user logs in using test data {string}")
+    public void loginUsingTestData(String testDataId) {
+        Map<String, String> data = ExcelUtils.getTestData("Login", testDataId);
+        LoggerUtils.info("Using test data '" + testDataId + "' (username: " + data.get("Username") + ")");
+        pages.login().login(data.get("Username"), data.get("Password"));
     }
 
-    @Then("the dashboard should be displayed")
-    public void dashboardShouldBeDisplayed() {
-        Assertions.assertTrue(homePage.isDashboardDisplayed(),
-                "Dashboard was not displayed");
+    /** expected is "Passed" (lands on the products page) or "Failed" (login error shown). */
+    @Then("the login should be {string}")
+    public void verifyLoginResult(String expected) {
+        switch (expected.toLowerCase()) {
+            case "passed" -> assertTrue(pages.inventory().isDisplayed(), "Products page was not displayed");
+            case "failed" -> {
+                String error = pages.login().getErrorMessage();
+                LoggerUtils.info("Login error shown: " + error);
+                assertFalse(error.isBlank(), "Expected a login error message");
+            }
+            default -> throw new IllegalArgumentException("Expected 'Passed' or 'Failed' but was: " + expected);
+        }
+    }
+
+    @Then("the login error {string} should be displayed")
+    public void verifyLoginError(String expected) {
+        assertEquals(expected, pages.login().getErrorMessage(), "Login error message");
+    }
+
+    @Then("the login page should be displayed")
+    public void verifyLoginPage() {
+        assertTrue(pages.login().isDisplayed(), "Login page was not displayed");
     }
 }

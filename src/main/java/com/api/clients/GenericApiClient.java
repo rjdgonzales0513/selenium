@@ -8,96 +8,48 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 
 /**
- * Generic, resource-agnostic HTTP verb wrapper.
- * Resource-specific clients (e.g. UserApiClient) can either extend this
- * or just call it directly for ad-hoc endpoints that don't warrant their
- * own dedicated client class.
+ * Generic, resource-agnostic HTTP client. send() covers every verb; the
+ * per-verb methods are shortcuts for the common cases.
  */
 public class GenericApiClient {
 
-     // ================================================================ GET
+    public Response send(String method, RequestSpecification spec, String endpoint,
+            Map<String, ?> pathParams, Map<String, ?> queryParams, Map<String, ?> headers, Object body) {
+        RequestSpecification request = given().spec(spec)
+                .pathParams(pathParams)
+                .queryParams(queryParams)
+                .headers(headers);
+        if (body != null) {
+            request.body(body);
+        }
+
+        return switch (method.toUpperCase()) {
+            case "GET" -> request.when().get(endpoint);
+            case "POST" -> request.when().post(endpoint);
+            case "PUT" -> request.when().put(endpoint);
+            case "PATCH" -> request.when().patch(endpoint);
+            case "DELETE" -> request.when().delete(endpoint);
+            default -> throw new IllegalArgumentException("Unsupported HTTP method: " + method);
+        };
+    }
+
     public Response get(RequestSpecification spec, String endpoint) {
-        return get(spec, endpoint, Map.of(), Map.of(), Map.of());
+        return send("GET", spec, endpoint, Map.of(), Map.of(), Map.of(), null);
     }
 
-    public Response get(RequestSpecification spec, String endpoint,
-                         Map<String, ?> pathParams, Map<String, ?> queryParams) {
-        return get(spec, endpoint, pathParams, queryParams, Map.of());
-    }
-
-    public Response get(RequestSpecification spec, String endpoint,
-                         Map<String, ?> pathParams, Map<String, ?> queryParams, Map<String, ?> headers) {
-        return given().spec(spec)
-                .pathParams(pathParams)
-                .queryParams(queryParams)
-                .headers(headers)
-                .when().get(endpoint)
-                .then().extract().response();
-    }
-
-    // =============================================================== POST
     public Response post(RequestSpecification spec, String endpoint, Object body) {
-        return post(spec, endpoint, Map.of(), Map.of(), Map.of(), body);
+        return send("POST", spec, endpoint, Map.of(), Map.of(), Map.of(), body);
     }
 
-    public Response post(RequestSpecification spec, String endpoint,
-                          Map<String, ?> pathParams, Map<String, ?> queryParams, Map<String, ?> headers, Object body) {
-        return given().spec(spec)
-                .pathParams(pathParams)
-                .queryParams(queryParams)
-                .headers(headers)
-                .body(body)
-                .when().post(endpoint)
-                .then().extract().response();
+    public Response put(RequestSpecification spec, String endpoint, Map<String, ?> pathParams, Object body) {
+        return send("PUT", spec, endpoint, pathParams, Map.of(), Map.of(), body);
     }
 
-    // ================================================================ PUT
-    public Response put(RequestSpecification spec, String endpoint,
-                         Map<String, ?> pathParams, Object body) {
-        return put(spec, endpoint, pathParams, Map.of(), Map.of(), body);
+    public Response patch(RequestSpecification spec, String endpoint, Map<String, ?> pathParams, Object body) {
+        return send("PATCH", spec, endpoint, pathParams, Map.of(), Map.of(), body);
     }
 
-    public Response put(RequestSpecification spec, String endpoint,
-                         Map<String, ?> pathParams, Map<String, ?> queryParams, Map<String, ?> headers, Object body) {
-        return given().spec(spec)
-                .pathParams(pathParams)
-                .queryParams(queryParams)
-                .headers(headers)
-                .body(body)
-                .when().put(endpoint)
-                .then().extract().response();
-    }
-
-    // ============================================================== PATCH
-    public Response patch(RequestSpecification spec, String endpoint,
-                           Map<String, ?> pathParams, Object body) {
-        return patch(spec, endpoint, pathParams, Map.of(), Map.of(), body);
-    }
-
-    public Response patch(RequestSpecification spec, String endpoint,
-                           Map<String, ?> pathParams, Map<String, ?> queryParams, Map<String, ?> headers, Object body) {
-        return given().spec(spec)
-                .pathParams(pathParams)
-                .queryParams(queryParams)
-                .headers(headers)
-                .body(body)
-                .when().patch(endpoint)
-                .then().extract().response();
-    }
-
-    // ============================================================= DELETE
-    public Response delete(RequestSpecification spec, String endpoint,
-                            Map<String, ?> pathParams) {
-        return delete(spec, endpoint, pathParams, Map.of(), Map.of());
-    }
-
-    public Response delete(RequestSpecification spec, String endpoint,
-                            Map<String, ?> pathParams, Map<String, ?> queryParams, Map<String, ?> headers) {
-        return given().spec(spec)
-                .pathParams(pathParams)
-                .queryParams(queryParams)
-                .headers(headers)
-                .when().delete(endpoint)
-                .then().extract().response();
+    public Response delete(RequestSpecification spec, String endpoint, Map<String, ?> pathParams) {
+        return send("DELETE", spec, endpoint, pathParams, Map.of(), Map.of(), null);
     }
 }

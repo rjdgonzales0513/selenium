@@ -2,6 +2,8 @@ package com.selenium.driver;
 
 import org.openqa.selenium.WebDriver;
 
+import com.common.utils.LoggerUtils;
+
 public class DriverManager {
     private DriverManager() {
 
@@ -17,10 +19,15 @@ public class DriverManager {
         WebDriver driver = DRIVER.get();
 
         if (driver == null) {
-            throw new IllegalStateException();
+            throw new IllegalStateException(
+                    "No WebDriver for this thread. UI scenarios must be tagged @Browser so WebSteps starts the browser.");
         }
 
         return driver;
+    }
+
+    public static boolean hasDriver() {
+        return DRIVER.get() != null;
     }
 
     public static void quitDriver() {
@@ -28,6 +35,7 @@ public class DriverManager {
         if (driver != null) {
             driver.quit();
             DRIVER.remove();
+            LoggerUtils.info("WebDriver closed");
         }
 
     }

@@ -1,39 +1,44 @@
 package com.selenium.pages;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.Select;
 
-import com.aventstack.extentreports.MediaEntityBuilder;
-import com.selenium.utils.LoggerUtils;
-import com.selenium.utils.ScreenshotUtils;
+import com.common.utils.LoggerUtils;
 import com.selenium.utils.WaitUtils;
 
 public class InventoryPage {
     private final WebDriver driver;
     private final By productHeader = By.xpath("//span[text()='Products']");
-    private final By cartBtn = By.xpath("//a[@data-test='shopping-cart-link']");
+    private final By sortDropdown = By.cssSelector("select[data-test='product-sort-container']");
+    private final By itemPrices = By.cssSelector("div[data-test='inventory-item-price']");
 
     public InventoryPage(WebDriver driver) {
         this.driver = driver;
     }
 
-    public boolean isDashboardDisplayed() {
+    public boolean isDisplayed() {
         return WaitUtils.visible(driver, productHeader).isDisplayed();
     }
 
-    public void addToCartItem(String item) {
-        WaitUtils.clickable(driver, getAddToCartButton(item));
-
-        WaitUtils.visible(driver, getAddToCartButton(item)).click();
-        LoggerUtils.getLogger().pass("Successfully clicked add to cart button");
+    public void addToCart(String item) {
+        WaitUtils.clickable(driver, getAddToCartButton(item)).click();
+        LoggerUtils.info("Added '" + item + "' to cart");
     }
 
-    public void goToCart() {
-        WaitUtils.visible(driver, cartBtn).click();
-        LoggerUtils.getLogger().fail("Successfully clicked cart button",
-                MediaEntityBuilder.createScreenCaptureFromBase64String(ScreenshotUtils.takeScreenshotAsBase64(driver))
-                        .build());
+    /** Selects a sort option by its visible text, e.g. "Price (low to high)". */
+    public void sortBy(String option) {
+        new Select(WaitUtils.visible(driver, sortDropdown)).selectByVisibleText(option);
+        LoggerUtils.info("Sorted products by '" + option + "'");
+    }
 
+    public List<BigDecimal> getItemPrices() {
+        return WaitUtils.allVisible(driver, itemPrices).stream()
+                .map(e -> new BigDecimal(e.getText().replace("$", "").trim()))
+                .toList();
     }
 
     private By getAddToCartButton(String itemName) {

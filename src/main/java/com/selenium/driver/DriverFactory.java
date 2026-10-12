@@ -3,7 +3,7 @@ package com.selenium.driver;
 import org.openqa.selenium.WebDriver;
 
 import com.common.config.ConfigManager;
-import com.selenium.utils.LoggerUtils;
+import com.common.utils.LoggerUtils;
 
 public class DriverFactory {
 
@@ -15,19 +15,15 @@ public class DriverFactory {
         WebDriver driver;
         String browser = ConfigManager.getBrowser().toUpperCase();
 
-        LoggerUtils.getLogger().info("Creating WebDriver");
-        LoggerUtils.getLogger().info(String.format("Browser: %s", browser));
+        LoggerUtils.info(String.format("Starting %s (headless=%s)", browser, ConfigManager.isHeadless()));
 
         switch (browser) {
             case "CHROME" -> driver = new ChromeDriverImpl().createDriver();
             case "FIREFOX" -> driver = new FirefoxDriverImpl().createDriver();
-            default -> {
-                System.out.println("not available");
-                throw new IllegalStateException();
-            } // throw exception
+            default -> throw new IllegalStateException("Unsupported browser: " + browser);
         }
 
-        LoggerUtils.getLogger().info("WebDriver created successfully");
+        LoggerUtils.info("WebDriver created successfully");
 
         return driver;
     }

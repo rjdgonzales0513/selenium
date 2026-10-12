@@ -3,11 +3,11 @@ package com.api.spec;
 import org.hamcrest.Matchers;
 
 import com.api.auth.AuthManager;
+import com.api.filters.ApiLoggingFilter;
 import com.common.config.ConfigManager;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
-import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
@@ -22,7 +22,7 @@ public class ApiSpec {
         return new RequestSpecBuilder()
                 .setBaseUri(ConfigManager.get("base.url"))
                 .setContentType(ContentType.JSON)
-                .log(LogDetail.ALL);
+                .addFilter(new ApiLoggingFilter());
     }
 
     /**
