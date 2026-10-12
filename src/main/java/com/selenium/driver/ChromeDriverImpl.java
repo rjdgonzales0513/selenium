@@ -18,7 +18,10 @@ public class ChromeDriverImpl implements IDriver {
 
         if (ConfigManager.isHeadless()) {
             options.addArguments("--headless=new");
-            options.addArguments("--start-maximized");
+            // Headless ignores --start-maximized and defaults to a small window; use a desktop size
+            options.addArguments("--window-size=1920,1080");
+            // Avoids Chrome crashes from the small /dev/shm on Linux CI runners and containers
+            options.addArguments("--disable-dev-shm-usage");
         }
         options.addArguments("--disable-notifications");
         options.addArguments("--start-maximized");

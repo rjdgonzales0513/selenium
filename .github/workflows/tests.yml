@@ -1,0 +1,97 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Manual run from the Actions tab with your own options
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Cucumber tag expression, e.g. @smoke, @API, @All and not @E2E"
+        required: true
+        default: "@All"
+      env:
+        description: "Environment"
+        required: true
+        default: "qa"
+        type: choice
+        options: [qa, staging]
+      browser:
+        description: "Browser"
+        required: true
+        default: "chrome"
+        type: choice
+        options: [chrome, firefox]
+
+# Cancel an older run of the same branch/PR when a new commit arrives
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Cucumber tests (${{ inputs.tags || '@All' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      TAGS: ${{ inputs.tags || '@All' }}
+      TEST_ENV: ${{ inputs.env || 'qa' }}
+      BROWSER: ${{ inputs.browser || 'chrome' }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # ubuntu-latest ships with Chrome and Firefox; Selenium Manager downloads the matching driver.
+      - name: Run tests
+        run: >
+          mvn -B clean test
+          -Denv="$TEST_ENV"
+          -Dbrowser="$BROWSER"
+          -Dheadless=true
+          "-Dcucumber.filter.tags=$TAGS"
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Test run"
+            echo "- Tags: \`$TAGS\`"
+            echo "- Environment: \`$TEST_ENV\`"
+            echo "- Browser: \`$BROWSER\` (headless)"
+            echo
+            echo "### Scenarios"
+            echo '```'
+            grep -h -E "END Scenario" logs/automation.log | sed 's/^.*END Scenario: //' || echo "No scenarios ran"
+            echo '```'
+            echo
+            grep -h -E "^Tests run:" target/surefire-reports/*.txt || true
+            echo
+            echo "Download the **test-reports** artifact for the Extent report, Cucumber report and logs."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            ExtentReport.html
+            target/cucumber-report.html
+            target/surefire-reports/
+            logs/
+          retention-days: 14
+          if-no-files-found: warn

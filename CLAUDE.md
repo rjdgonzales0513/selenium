@@ -14,7 +14,9 @@ mvn test -Denv=qa -Dbrowser=firefox -Dheadless=true
 mvn test-compile                          # compile only
 ```
 
-- **Tag filtering:** `TestRunner` (`src/test/java/com/selenium/runners/TestRunner.java`) hard-codes `FILTER_TAGS_PROPERTY_NAME = "@All"`, and that wins over `-Dcucumber.filter.tags=...` on the command line (verified: passing `@get_user` still ran every scenario). To run a single scenario or tag, temporarily change the runner's filter value (e.g. `"@get_user"`), or run the feature from the IDE.
+- **Tag filtering:** `mvn test -Denv=qa "-Dcucumber.filter.tags=@API"` (any tag expression). The default `@All` is set as a Maven property in `pom.xml`. `TestRunner` deliberately doesn't set `FILTER_TAGS_PROPERTY_NAME`, because a `@ConfigurationParameter` there would override the command line. In PowerShell the whole `-D…` argument must be quoted.
+- **CI:** `.github/workflows/tests.yml` runs `mvn -B clean test -Dheadless=true` on ubuntu-latest for pushes and PRs to `main`, nightly, and manually (with tags, env and browser inputs). It uploads reports as the `test-reports` artifact. Headless Chrome uses `--window-size=1920,1080`, set in `ChromeDriverImpl`.
+- **reqres.in limit:** 40 requests per day per IP address without an account. When it's used up, API scenarios fail with `429 rate_limit_exceeded`; that's not a code bug. Don't loop on API runs to debug.
 - Reports: `ExtentReport.html` (project root, written by `ExtentManager`), `target/cucumber-report.html`, and log4j2 output in `logs/automation.log`.
 - All 19 scenarios should pass. The invalid-login rows in `Login.feature` assert that an error is shown, through `the login should be "Failed"`.
 - After moving or deleting a `.feature` file, use `mvn clean test`. Otherwise stale copies in `target/test-classes` keep running.

@@ -47,7 +47,15 @@ mvn test -Denv=qa -Dbrowser=firefox -Dheadless=true
 
 ### Running a subset
 
-The runner (`src/test/java/com/selenium/runners/TestRunner.java`) filters on the `@All` tag, and that setting takes precedence over `-Dcucumber.filter.tags` on the command line. To run one tag, change the `FILTER_TAGS_PROPERTY_NAME` value in the runner, for example to `"@smoke"` or `"@get_user"`. You can also run a single feature file from your IDE.
+Use `cucumber.filter.tags` to choose which scenarios run. It defaults to `@All`, which runs everything.
+
+```bash
+mvn test -Denv=qa "-Dcucumber.filter.tags=@API"
+mvn test -Denv=qa "-Dcucumber.filter.tags=@smoke"
+mvn test -Denv=qa "-Dcucumber.filter.tags=@All and not @E2E"
+```
+
+In PowerShell, keep the quotes around the whole `-D...` argument. Without them, PowerShell splits it at the dot and Maven fails with `Unknown lifecycle phase ".filter.tags=..."`.
 
 ## Configuration
 
@@ -117,7 +125,7 @@ The test plan, test scenarios and detailed test cases (steps, data, expected res
   }
   ```
 
-  `WebActionUtils` waits for each element and logs each action with the readable name you pass in. It covers `navigateTo`, `click`, `type`, `typeSecret`, `selectByVisibleText`, `getText`, `getVisibleTexts`, `getTexts` (no wait, may be empty), `isDisplayed` (returns false instead of throwing), and the frame and window helpers. If a page needs a new kind of interaction, add it to `WebActionUtils` so every page can reuse it.
+  See [Web actions](#web-actions-webactionutils) for the full list of methods.
 - UI step classes receive `PageManager` through their constructor (picocontainer creates one per scenario), and get pages from it, for example `pages.cart()`. Don't keep page objects in static fields.
 
 ```gherkin
@@ -130,6 +138,38 @@ Feature: Login
     When the user logs in with username "standard_user" and password "secret_sauce"
     Then the products page should be displayed
 ```
+
+### Web actions (WebActionUtils)
+
+`com.selenium.utils.WebActionUtils` is the only place that talks to the browser. Every page gets an instance as `actions` from `BasePage`. Each action waits for its element (up to `explicitWait` seconds from config) and logs what it did to the console, `logs/automation.log` and the Extent report, using the `elementName` you pass, for example "Clicked Login button".
+
+| Method | What it does | Waits for |
+|---|---|---|
+| `navigateTo(url)` | Opens the URL in the current tab | – |
+| `click(locator, elementName)` | Clicks the element | Clickable |
+| `type(locator, value, elementName)` | Clears the field and types the value; the value is logged | Visible |
+| `typeSecret(locator, value, elementName)` | Same as `type`, but logs `****` instead of the value. Use for passwords and tokens | Visible |
+| `selectByVisibleText(locator, text, elementName)` | Picks an option in a `<select>` drop-down by its visible text | Visible |
+| `getText(locator)` | Returns the element's text, trimmed | Visible |
+| `getVisibleTexts(locator)` | Returns the texts of all matching elements. Fails if none appear in time | At least one visible |
+| `getTexts(locator)` | Returns the texts of whatever matches right now. May be empty, e.g. an empty cart or a missing badge | No wait |
+| `isDisplayed(locator)` | `true` if the element becomes visible, `false` if it doesn't appear in time. Never throws | Visible |
+| `switchFrame(locator, elementName)` | Switches into an iframe | Visible |
+| `switchFrameByIndex(index)` | Switches into an iframe by its position | – |
+| `switchToParentFrame()` | Moves up one frame level | – |
+| `switchToDefaultFrame()` | Goes back to the main page | – |
+| `identifyParentWindow()` | Remembers the current window so you can return to it | – |
+| `openNewTab()` / `openNewWindow()` | Opens and switches to a new tab or window | – |
+| `switchWindowByTitle(title)` | Switches to the first window whose title contains `title`; logs a warning if none match | – |
+| `switchToParentWindow()` | Returns to the window saved by `identifyParentWindow()` | – |
+| `closeCurrentWindow()` | Closes the current tab or window | – |
+
+Choosing a read method:
+- **The element must be there:** use `getText` or `getVisibleTexts`, which wait and fail if it never appears.
+- **It may be absent:** use `getTexts`, which returns an empty list straight away instead of waiting out the timeout.
+- **For assertions:** use `isDisplayed`, so a missing element gives a clear assertion failure rather than a timeout error.
+
+Adding a new action: if a page needs an interaction that isn't listed, such as hover, drag-and-drop or JavaScript click, add it to `WebActionUtils` with a wait and a `LoggerUtils` call, following the existing methods. Then every page can use it.
 
 ### UI steps
 
@@ -166,6 +206,26 @@ Feature: Users API
 | Send it | `I send a GET/POST/PUT/PATCH/DELETE request to "/path"`, optionally followed by `with authorization` (adds the bearer token) |
 | Check the response | `the response status code should be 200`, `the response json path "x" should be "text"` or `should be 2`, `the response json path "x" should exist`, `the response body should be an empty JSON object` |
 | Reuse values | `I store the response json path "data.email" as "email"`, `the response json path "x" should equal the stored "email"` |
+
+## Continuous integration (GitHub Actions)
+
+`.github/workflows/tests.yml` runs the suite on GitHub's Ubuntu runners with headless Chrome.
+
+| Trigger | What runs |
+|---|---|
+| Push to `main` | All scenarios (`@All`), qa, Chrome |
+| Pull request into `main` | All scenarios (`@All`), qa, Chrome |
+| Manual (**Actions → Tests → Run workflow**) | Your choice of tag expression, environment and browser |
+
+A new commit on the same branch or PR cancels the run already in progress.
+
+After each run:
+- **Job summary:** the run page shows each scenario with PASSED or FAILED, plus the totals.
+- **`test-reports` artifact:** includes `ExtentReport.html`, the Cucumber HTML report, the Surefire results and `logs/automation.log`. It's kept for 14 days. Download it from the run page and open `ExtentReport.html` in a browser.
+
+To make passing tests a merge requirement, add **Tests** as a required status check under **Settings → Branches → Branch protection rules** for `main`.
+
+API tests on CI: reqres.in's 40 requests/day limit applies per IP address, and GitHub-hosted runners share IP addresses with other users. API scenarios can therefore fail with `429` on CI even when nothing is wrong. If that happens often, run UI and API separately with a manual run using `@Browser` or `@API`, or use a reqres.in account and API key.
 
 ## Logging
 
@@ -213,5 +273,6 @@ The Extent report shows each scenario with its Given/When/Then steps underneath.
 
 ## Known issues
 
+- reqres.in allows 40 API requests per day per IP address without an account. Once that's used up, API tests fail with status `429` and the message "You've hit the anonymous demo limit"; the limit resets at midnight UTC. Avoid rerunning the API suite over and over, or sign up at reqres.in for a higher limit.
 - With a recent Chrome, Selenium 4.48 prints `Unable to find an exact match for CDP version` warnings. Tests still run; upgrading Selenium removes the warnings.
 - If you move or delete a `.feature` file, run `mvn clean test`. Otherwise the old copy in `target/test-classes` keeps running.

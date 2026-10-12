@@ -19,6 +19,8 @@
         <log4j.version>2.26.1</log4j.version>
         <jackson.version>2.17.0</jackson.version>
         <restassured.version>5.5.0</restassured.version>
+        <!-- Default Cucumber tag filter; override with -Dcucumber.filter.tags="@API" -->
+        <cucumber.filter.tags>@All</cucumber.filter.tags>
     </properties>
 
     <dependencyManagement>
