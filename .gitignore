@@ -1,0 +1,19 @@
+# Maven build output
+target/
+
+# Test run output
+ExtentReport.html
+logs/
+screenshots/
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
