@@ -35,7 +35,7 @@ Options you can pass with `-D`:
 
 | Property | Values | Default |
 |---|---|---|
-| `env` | `qa`, `staging` | `qa` |
+| `env` | `qa` (`staging` isn't set up yet, see Known issues) | `qa` |
 | `browser` | `chrome`, `firefox` | `chrome` |
 | `headless` | `true`, `false` | `false` |
 
@@ -61,14 +61,16 @@ In PowerShell, keep the quotes around the whole `-D...` argument. Without them, 
 
 Config files live in `src/test/resources/config/`:
 
-- `config.properties` is always loaded. It holds the browser, wait times, the UI `baseUrl`, and the API `base.url` and auth settings.
-- `<env>.properties` is loaded next, based on `-Denv`.
+- `config.properties` is always loaded. It holds `browser`, `headless`, `explicitWait` (seconds), the default `env`, and the API settings: `base.url`, `auth.*` and `request.timeout`.
+- `<env>.properties` is loaded next, based on `-Denv`, and can override any key. `qa.properties` holds the UI `baseUrl` (`https://www.saucedemo.com/`).
 
 Any key can be overridden with a JVM system property, for example `-DexplicitWait=20`.
 
 ## Project structure
 
 ```
+.github/workflows/tests.yml     GitHub Actions pipeline
+docs/Test_Plan_and_Test_Cases.xlsx   Test plan, scenarios and test cases
 src/main/java/com/              Framework code (no step definitions)
 ├── common/
 │   ├── config/       ConfigManager
@@ -242,7 +244,7 @@ LoggerUtils.block("Request", jsonText);   // titled block of preformatted text
 
 Each call is written to:
 
-- **The console and `logs/automation.log`** through Log4j2, under the name of the class that logged it. Every line includes the current scenario name, for example `[Add to cart]`. The log file rolls over daily or at 10 MB. Formats are set in `src/test/resources/log4j2-test.properties`.
+- **The console and `logs/automation.log`** through Log4j2, under the name of the class that logged it. Every line includes the current scenario name, for example `[CART_TC_001 - Add an item to the cart]`. The log file rolls over daily or at 10 MB. Formats are set in `src/test/resources/log4j2-test.properties`.
 - **The Extent report**, under the step that is currently running.
 
 What gets logged automatically:
@@ -273,6 +275,9 @@ The Extent report shows each scenario with its Given/When/Then steps underneath.
 
 ## Known issues
 
+- The `staging` environment isn't set up. `src/test/resources/config/staging.properties` has no `baseUrl` (so UI tests fail with `Missing config: baseUrl`), it points `base.url` at the placeholder `https://staging.example.com`, and there's no `testdata/staging/TestData.xlsx`. Fill these in before using `-Denv=staging` or the pipeline's staging option.
+- The files in `src/main/resources/config/` are never used, because the copies in `src/test/resources/config/` take priority on the test classpath.
 - reqres.in allows 40 API requests per day per IP address without an account. Once that's used up, API tests fail with status `429` and the message "You've hit the anonymous demo limit"; the limit resets at midnight UTC. Avoid rerunning the API suite over and over, or sign up at reqres.in for a higher limit.
 - With a recent Chrome, Selenium 4.48 prints `Unable to find an exact match for CDP version` warnings. Tests still run; upgrading Selenium removes the warnings.
 - If you move or delete a `.feature` file, run `mvn clean test`. Otherwise the old copy in `target/test-classes` keeps running.
+- On Windows, git ignores case-only renames (`core.ignorecase=true`). Renaming `Testdata.xlsx` to `TestData.xlsx` in Explorer or an IDE changes nothing in git, so Linux CI keeps the old name and fails. Use `git mv -f old New`, or go through a temporary name: `git mv -f Old tmp` then `git mv -f tmp New`.
