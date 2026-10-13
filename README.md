@@ -6,6 +6,12 @@ A test automation framework for UI and API tests, written in Gherkin with Cucumb
 - **API tests:** RestAssured against [reqres.in](https://reqres.in/api)
 - **Reporting:** ExtentReports, a Cucumber HTML report, and Log4j2 logs
 
+## Documentation
+
+- [User Guide](docs/USER_GUIDE.md): step-by-step instructions for writing UI and API scenarios, adding pages, steps, actions, test data and environments, plus troubleshooting
+- [Architecture Decision Records](docs/adr/README.md): why the framework is built the way it is
+- [Test plan and test cases](docs/Test_Plan_and_Test_Cases.xlsx)
+
 ## Tech stack
 
 | Tool | Version |
